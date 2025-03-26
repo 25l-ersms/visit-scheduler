@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "ersms-visit-sched"
+version = "0.1.0"
+description = "visit sched, part of ERSMS project"
+authors = ["kfijalkowski1 <k.1.fijalkowski@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.12"
+elasticsearch = "^8.17.2"
+kubernetes = "^32.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
