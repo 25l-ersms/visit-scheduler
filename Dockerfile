@@ -1,4 +1,4 @@
-FROM python:3.11-buster as builder
+FROM python:3.11-buster AS builder
 
 RUN pip install poetry==1.8.5
 
@@ -13,7 +13,7 @@ COPY pyproject.toml poetry.lock ./
 
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without dev --no-root
 
-FROM python:3.11-slim-buster as runtime
+FROM python:3.11-slim-buster AS runtime
 
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
@@ -21,6 +21,8 @@ ENV VIRTUAL_ENV=/app/.venv \
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY visit_scheduler ./visit_scheduler
+# uncomment only for development !!!
+#COPY .env ./.env
 EXPOSE 8080
 
 ENTRYPOINT ["fastapi", "run", "visit_scheduler/app/main.py", "--port", "8080"]
