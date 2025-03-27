@@ -8,10 +8,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.115.12"
+fastapi = {extras = ["standard"], version = "^0.115.12"}
 elasticsearch = "^8.17.2"
 kubernetes = "^32.0.1"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
 
 [build-system]
 requires = ["poetry-core"]
