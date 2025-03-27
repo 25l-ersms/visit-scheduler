@@ -27,7 +27,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ variables.DOCKER_NAMESPACE }}/ersms-visit_sched
+          images: ${{ vars.DOCKER_NAMESPACE }}/ersms-visit_sched
 
       - name: Build and push Docker image
         id: push
@@ -42,6 +42,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: docker.io/${{ variables.DOCKER_NAMESPACE }}/ersms-visit_sched
+          subject-name: docker.io/${{ vars.DOCKER_NAMESPACE }}/ersms-visit_sched
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
