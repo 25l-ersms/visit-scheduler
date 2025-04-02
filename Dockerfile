@@ -28,8 +28,8 @@ ENV PATH=$VIRTUAL_ENV/bin:$PATH
 ENV UVICORN_WORKERS=4
 
 COPY docker/entrypoint.sh entrypoint.sh
-COPY --from=builder /app/visit_scheduler visit_scheduler
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder /app/visit_scheduler visit_scheduler
 
 EXPOSE 8080
 
@@ -42,8 +42,8 @@ ENV VIRTUAL_ENV=/app/.venv
 
 COPY docker/entrypoint.sh entrypoint.sh
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --with dev
-COPY --from=builder /app/visit_scheduler visit_scheduler
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder /app/visit_scheduler visit_scheduler
 
 EXPOSE 8080
 
