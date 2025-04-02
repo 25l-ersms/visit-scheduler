@@ -13,8 +13,7 @@ Python `^3.11` is required. Install using [`pyenv`](https://github.com/pyenv/pye
 pyenv install 3.11
 ```
 
-Install the project in a local virtual environemnt:
-
+Install the project in a local virtual environment:
 ```shell
 PYENV_VERSION=3.11 python3 -m venv .venv
 VIRTUAL_ENV=.venv poetry install --with dev
