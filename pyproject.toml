@@ -5,8 +5,10 @@ description = "visit sched, part of ERSMS project"
 authors = [
     {name = "kfijalkowski1", email = "k.1.fijalkowski@gmail.com"} 
 ]
+packages = [
+    { include = "visit_scheduler" }
+]
 license = "MIT"
-#readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard] (>=0.115.12,<0.116.0)",
