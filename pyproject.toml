@@ -23,7 +23,19 @@ package-mode = false
 pytest = "^8.3.5"
 ruff = "^0.11.2"
 mypy = "^1.15.0"
+kubernetes-stubs = "^22.6.0.post1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# external tools
+[tool.mypy]
+exclude = [".venv", "tests"]
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+show_error_codes = true
