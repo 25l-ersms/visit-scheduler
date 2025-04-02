@@ -45,8 +45,6 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --with dev
 COPY --from=builder /app/visit_scheduler visit_scheduler 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY .env ./.env
-
 EXPOSE 8080
 
 ENTRYPOINT ["bash", "entrypoint.sh"]
