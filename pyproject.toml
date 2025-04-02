@@ -80,7 +80,7 @@ line-length = 120
 # flake8-builtins - A
 # Pylint - PLC, PLE, PLW
 # isort - I
-select = ['E', 'F', 'W', 'A', 'PLC', 'PLE', 'PLW', 'I']
+select = ['E', 'F', 'W', 'A', 'PLC', 'PLE', 'PLW', 'I', 'FAST']
 ignore = [
     # LineTooLong
     "E501",

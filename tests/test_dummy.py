@@ -1,2 +1,2 @@
 def test_sanity():
-    pass
+    from visit_scheduler import app  # noqa: F401, I001
