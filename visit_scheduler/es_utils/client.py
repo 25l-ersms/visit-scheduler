@@ -1,6 +1,7 @@
-from elasticsearch import Elasticsearch
 import os
+
 import dotenv
+from elasticsearch import Elasticsearch
 from kubernetes import client, config
 from kubernetes.config.config_exception import ConfigException
 

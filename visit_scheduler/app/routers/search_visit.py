@@ -1,9 +1,9 @@
-from fastapi import APIRouter
 from elastic_transport import ObjectApiResponse
+from fastapi import APIRouter
 
 from visit_scheduler.app.models.models import InsertModel
-from visit_scheduler.es_utils.search import get_all
 from visit_scheduler.es_utils.add import add_element
+from visit_scheduler.es_utils.search import get_all
 
 router = APIRouter(
     prefix="/visits",

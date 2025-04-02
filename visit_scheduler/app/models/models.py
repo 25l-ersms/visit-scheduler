@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class InsertModel(BaseModel): # TODO change to real model, this is just a placeholder
     name: str
     age: int
