@@ -3,7 +3,7 @@ name = "visit-scheduler"
 version = "0.1.0"
 description = "visit sched, part of ERSMS project"
 authors = [
-    {name = "kfijalkowski1", email = "k.1.fijalkowski@gmail.com"} 
+    {name = "kfijalkowski1", email = "k.1.fijalkowski@gmail.com"}
 ]
 packages = [
     { include = "visit_scheduler" }
