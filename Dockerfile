@@ -25,7 +25,6 @@ FROM python:$PYTHON_VERSION AS prod
 
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH=$VIRTUAL_ENV/bin:$PATH
-ENV UVICORN_WORKERS=4
 
 COPY docker/entrypoint.sh entrypoint.sh
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
