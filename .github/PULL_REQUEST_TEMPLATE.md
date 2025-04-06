@@ -10,5 +10,5 @@
 **Related Issues**
 - _If none, delete this section_
 
-**Resources**
-- _Screenshots, docs, scripts, etc.; if none, delete this section_
+**Testing**
+- _Add some proof that the feature is working as expected and instruct how to test it_
