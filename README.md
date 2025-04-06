@@ -31,13 +31,14 @@ docker build -t visit-scheduler:dev --target=dev .
 
 ### Development
 
+# Dev variables defined in .env in dev-ops repo
+
+- ES_HOST
+- ES_LOGIN
+- ES_PASS
+- UVICORN_WORKERS
+
 #### Running the app
-
-Copy the sample envfile:
-
-```shell
-cp .env.sample .env
-```
 
 Run locally:
 
