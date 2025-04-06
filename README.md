@@ -61,10 +61,8 @@ docker run -it --env-file=.env visit-scheduler:latest
 
 #### Contributing
 
-Install [pre-commit](https://pre-commit.com/) hooks:
-
 ```shell
-pre-commit install
+poetry run pre-commit install
 ```
 
 or run checks manually:
