@@ -4,7 +4,7 @@
 **Why?**
 - _What was the motivation?_
 
-**How??**
+**How?**
 - _How the changes were implemented?_
 
 **Related Issues**
