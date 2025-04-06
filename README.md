@@ -61,13 +61,13 @@ docker run -it --env-file=.env visit-scheduler:latest
 
 #### Contributing
 
-Install [pre-commit](https://pre-commit.com/) hooks:
+Install [pre-commit](https://pre-commit.com/) hooks (`pre-commit` itself is installed as a dev dependency by `poetry`):
 
 ```shell
-pre-commit install
+poetry run pre-commit install
 ```
 
-or run checks manually:
+or run checks manually (remember, they will run in CI anyway!):
 
 ```shell
 # verify pyproject.toml integrity
