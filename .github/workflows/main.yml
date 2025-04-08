@@ -7,3 +7,8 @@ on:
 jobs:
   push_to_registry:
     uses: 25l-ersms/25L-ersms-devops/.github/workflows/docker-build.yml@feature/14/reusable-pipelines
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
