@@ -10,6 +10,6 @@ on:
 
 jobs:
   ci:
-    uses: 25l-ersms/25L-ersms-devops/.github/workflows/ci-python.yml@feature/14/reusable-pipelines
+    uses: 25l-ersms/25L-ersms-devops/.github/workflows/ci-python.yml@main
     with:
       package-name: visit_scheduler
