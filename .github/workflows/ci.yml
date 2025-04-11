@@ -7,55 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+
 jobs:
   ci:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.11
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.1.2
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          virtualenvs-path: .venv
-          installer-parallel: true
-
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Install project
-        run: poetry install --with dev --no-interaction
-
-      - name: Run pre-commit-hooks
-        run: poetry run pre-commit run --all-files --show-diff-on-failure
-
-      - name: Run tests
-        run: poetry run pytest --doctest-modules --junitxml=junit/test-results.xml --cov=visit_scheduler --cov-report=xml
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results
-          path: junit/test-results.xml
-        if: ${{ always() }}
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.xml
-        if: ${{ always() }}
+    uses: 25l-ersms/25L-ersms-devops/.github/workflows/ci-python.yml@main
+    with:
+      package-name: visit_scheduler
