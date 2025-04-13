@@ -10,3 +10,7 @@ class SearchModel(BaseModel):  # TODO change to real model, this is just a place
     query: str
     page: int = 1
     per_page: int = 10
+
+
+class SendModel(BaseModel):  # TODO change to real model, this is just a placeholder
+    msg: str
