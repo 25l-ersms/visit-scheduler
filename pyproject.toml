@@ -13,7 +13,8 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard] (>=0.115.12,<0.116.0)",
     "elasticsearch (>=8.17.2,<9.0.0)",
-    "kubernetes (>=32.0.1,<33.0.0)"
+    "kubernetes (>=32.0.1,<33.0.0)",
+    "kafka-python (>=2.1.5,<3.0.0)",
 ]
 
 [tool.poetry]
@@ -24,8 +25,8 @@ pytest = "^8.3.5"
 ruff = "^0.11.2"
 mypy = "^1.15.0"
 kubernetes-stubs = "^22.6.0.post1"
-pre-commit = "^4.2.0"
 pytest-cov = "^6.1.1"
+pre-commit = "^4.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -41,6 +42,14 @@ check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["kafka.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["kubernetes.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
