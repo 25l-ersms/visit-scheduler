@@ -1,12 +1,10 @@
-from typing import Literal
+import functools
 
 import confluent_kafka  # type: ignore[import-untyped]
 
 from visit_scheduler.kafka_utils.oauth import KafkaTokenProvider
 from visit_scheduler.package_utils.logger_conf import logger
-from visit_scheduler.package_utils.settings import KafkaSettings
-
-kafka_authentication_scheme_t = Literal["oauth", "none"]
+from visit_scheduler.package_utils.settings import KafkaSettings, kafka_authentication_scheme_t
 
 
 def _get_kafka_config(
@@ -36,27 +34,26 @@ def _callback(error: str, message: str) -> None:
         logger.info(f"Delivered message {message}")
 
 
-producer: confluent_kafka.Producer | None = None  # type: ignore[no-any-unimported]
+@functools.lru_cache(maxsize=1)
+def _get_producer() -> confluent_kafka.Producer:  # type: ignore[no-any-unimported]
+    settings = KafkaSettings()
+    logger.info("Initializing Kafka producer")
+
+    auth_scheme: kafka_authentication_scheme_t = settings.AUTHENTICATION_SCHEME
+
+    config = _get_kafka_config(bootstrap_url=settings.BOOTSTRAP_URL, auth_scheme=auth_scheme)
+
+    producer = confluent_kafka.Producer(config)
+    logger.info("Initialized Kafka producer")
+    return producer
 
 
 def send_message(message: str) -> None:
     """
     Send a message to the Kafka topic.
     """
-    settings = KafkaSettings()
 
-    # TODO find a better way to handle this
-    global producer  # noqa: PLW0603
-    if producer is None:
-        logger.info("Initializing Kafka producer")
-
-        auth_scheme: kafka_authentication_scheme_t = settings.AUTHENTICATION_SCHEME
-
-        config = _get_kafka_config(bootstrap_url=settings.BOOTSTRAP_URL, auth_scheme=auth_scheme)
-
-        producer = confluent_kafka.Producer(config)
-        logger.info("Initialized Kafka producer")
-
-    producer.poll(0.0)
+    producer = _get_producer()
+    producer.poll(timeout=0.0)
     producer.produce(KafkaSettings().TOPIC, value=message.encode("utf-8"), key="message", callback=_callback)
     producer.flush()
