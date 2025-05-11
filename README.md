@@ -37,6 +37,10 @@ docker build -t visit-scheduler:dev --target=dev .
 - ES_LOGIN
 - ES_PASS
 - UVICORN_WORKERS
+- KAFKA_BOOTSTRAP_URL
+- KAFKA_GROUP_ID
+- KAFKA_TOPIC
+- KAFKA_AUTHENTICATION_SCHEME
 
 #### Running the app
 

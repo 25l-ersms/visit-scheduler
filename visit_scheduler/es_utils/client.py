@@ -1,9 +1,8 @@
-import os
-
-import dotenv
 from elasticsearch import Elasticsearch
 from kubernetes import client, config
 from kubernetes.config.config_exception import ConfigException
+
+from visit_scheduler.package_utils.settings import ElasticsearchSettings
 
 
 def get_k8s_es_credits(v1: client.CoreV1Api) -> tuple[str, str, str]:
@@ -15,8 +14,9 @@ def get_creds() -> tuple[str, str, str]:
     try:
         config.load_kube_config()  # type: ignore[attr-defined]
     except ConfigException:
-        dotenv.load_dotenv()
-        return os.getenv("ES_HOST") or "", os.getenv("ES_PASS") or "", os.getenv("ES_LOGIN") or ""
+        settings = ElasticsearchSettings()
+
+        return settings.HOST, settings.PASS, settings.LOGIN
     v1 = client.CoreV1Api()
     return get_k8s_es_credits(v1)
 
