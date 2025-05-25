@@ -1,5 +1,18 @@
 # Visit scheduler
 
+## Design
+
+Api docs: http://localhost:8080/docs # swagger is the best docs
+Overall functionalities description:
+- kafka consumer:
+  - add_vendor: adding vendor information from kafka, has to make a local cache of vendors 
+  - add_rating: add rating about vendor from kafka
+- endpoints:
+  - add_time_slot: vendor adding time slot
+  - search_visit: client searching visit
+- saving visit into visit_manager by using its api
+
+
 ## Development
 
 ### Dependencies

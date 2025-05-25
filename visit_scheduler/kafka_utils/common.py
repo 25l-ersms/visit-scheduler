@@ -1,59 +1,77 @@
-import functools
+import base64
+import datetime
+import json
+import time
+from typing import Any
 
-import confluent_kafka  # type: ignore[import-untyped]
+import google.auth
+import urllib3
+from google.auth.compute_engine.credentials import Credentials
+from google.auth.transport.urllib3 import Request
 
-from visit_scheduler.kafka_utils.oauth import KafkaTokenProvider
 from visit_scheduler.package_utils.logger_conf import logger
-from visit_scheduler.package_utils.settings import KafkaSettings, kafka_authentication_scheme_t
+from enum import Enum
+# from https://cloud.google.com/managed-service-for-apache-kafka/docs/quickstart-python
 
 
-def _get_kafka_config(
-    bootstrap_url: str, auth_scheme: kafka_authentication_scheme_t
-) -> dict[str, (str | int | bool | object | None)]:
-    config: dict[str, (str | int | bool | object | None)] = {"bootstrap.servers": bootstrap_url}
-
-    if auth_scheme == "oauth":
-        logger.debug("Using OAuth for Kafka authentication")
-        token_provider = KafkaTokenProvider()
-
-        config = config | {
-            "security.protocol": "SASL_SSL",
-            "sasl.mechanisms": "OAUTHBEARER",
-            "oauth_cb": token_provider.get_token,
-        }
-    else:
-        logger.debug("Assuming Kafka authentication is not required")
-
-    return config
+def _encode(source: str) -> str:
+    """Safe base64 encoding."""
+    return base64.urlsafe_b64encode(source.encode("utf-8")).decode("utf-8").rstrip("=")
 
 
-def _callback(error: str, message: str) -> None:
-    if error is not None:
-        logger.error(f"Message delivery failed: {error}")
-    else:
-        logger.info(f"Delivered message {message}")
-
-
-@functools.lru_cache(maxsize=1)
-def _get_producer() -> confluent_kafka.Producer:  # type: ignore[no-any-unimported]
-    settings = KafkaSettings()
-    logger.info("Initializing Kafka producer")
-
-    auth_scheme: kafka_authentication_scheme_t = settings.AUTHENTICATION_SCHEME
-
-    config = _get_kafka_config(bootstrap_url=settings.BOOTSTRAP_URL, auth_scheme=auth_scheme)
-
-    producer = confluent_kafka.Producer(config)
-    logger.info("Initialized Kafka producer")
-    return producer
-
-
-def send_message(message: str) -> None:
+class KafkaTokenProvider(object):
     """
-    Send a message to the Kafka topic.
+    Provides OAuth tokens from Google Cloud Application Default credentials.
     """
 
-    producer = _get_producer()
-    producer.poll(timeout=0.0)
-    producer.produce(KafkaSettings().TOPIC, value=message.encode("utf-8"), key="message", callback=_callback)
-    producer.flush()
+    def __init__(self, **config: dict[Any, Any]):
+        self.credentials, _ = google.auth.default()
+        self.http_client = urllib3.PoolManager()
+        self.HEADER = json.dumps(dict(typ="JWT", alg="GOOG_OAUTH2_TOKEN"))
+
+    def get_credentials(self) -> Credentials | None:
+        if not self.credentials.valid:
+            logger.debug("Application default credentials not valid, refreshing")
+            self.credentials.refresh(Request(self.http_client))
+        logger.debug("Application default credentials valid")
+
+        return self.credentials  # type: ignore[no-any-return]
+
+    def get_jwt(self, creds: Credentials) -> str:
+        token_data = dict(
+            exp=creds.expiry.timestamp(),  # type: ignore[union-attr]
+            iat=datetime.datetime.now(datetime.timezone.utc).timestamp(),
+            iss="Google",
+            scope="kafka",
+            sub=creds.service_account_email,
+        )
+        return json.dumps(token_data)
+
+    def get_token(self, config_str: str | None) -> tuple[str, float]:
+        # Note: kafka client required that the function accepts a `config_str` parameter, which
+        # is the value of `sasl.oauthbearer.config` in the Kafka client configuration
+        # We're not using it, but without it, the client will silently fail the OAuth2 authentication (this behavior is not documented!)
+        # https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#kafka-client-configuration
+        if config_str is not None:
+            logger.warning("config_str was passed to get_token, but it will not be used")
+
+        logger.debug("Requesting Kafka credentials")
+        creds = self.get_credentials()
+        if creds is None:
+            raise RuntimeError("Could not find application default credentials")
+        token = ".".join([_encode(self.HEADER), _encode(self.get_jwt(creds)), _encode(creds.token)])  # type: ignore[arg-type]
+        logger.debug("Got Kafka credentials")
+
+        utc_expiry = creds.expiry.replace(tzinfo=datetime.timezone.utc)  # type: ignore[union-attr]
+        expiry_seconds = (utc_expiry - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+
+        return token, time.time() + expiry_seconds
+
+
+class KafkaTopics(Enum):
+    USERS = "users"
+    RATINGS = "ratings"
+
+    @property
+    def topic_name(self) -> str:
+        return self.value
