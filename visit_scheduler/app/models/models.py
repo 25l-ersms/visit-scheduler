@@ -1,16 +1,12 @@
 from pydantic import BaseModel
+import datetime
 
+class SearchVendorModel(BaseModel):
+    location: list[float]
+    service_type: str
+    start_time: datetime.datetime
+    end_time: datetime.datetime
 
-class InsertModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    name: str
-    age: int
-
-
-class SearchModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    query: str
-    page: int = 1
-    per_page: int = 10
-
-
-class SendModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    msg: str
+class AddTimeSlotModel(BaseModel):
+    start_time: datetime.datetime
+    end_time: datetime.datetime
