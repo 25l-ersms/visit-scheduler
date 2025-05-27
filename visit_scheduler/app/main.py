@@ -1,10 +1,11 @@
 import threading
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from visit_scheduler.app.routers import visits
 from visit_scheduler.kafka_utils.consumer import enable_listen_to_kafka
 from visit_scheduler.package_utils.logger_conf import logger
 
@@ -17,6 +18,7 @@ async def lifespan(turbo_app: FastAPI) -> AsyncGenerator[None, Any]:
     logger.info("Starting Kafka consumer thread...")
     thread = threading.Thread(target=enable_listen_to_kafka, daemon=True)
     thread.start()
+    logger.info("Initializing Elasticsearch client...")
     yield  # App runs while this context is active
     logger.info("App is shutting down.")
 

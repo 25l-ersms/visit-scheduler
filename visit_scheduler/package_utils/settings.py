@@ -19,7 +19,8 @@ class KafkaSettings(BaseSettings):
     TOPIC: str
     BOOTSTRAP_URL: str
     AUTHENTICATION_SCHEME: kafka_authentication_scheme_t = "none"
-    GROUP_ID: str = "handymen"
+    GROUP_ID: str = "visit-scheduler"
+
 
 class ElasticsearchSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ES_", env_file=".env", env_file_encoding="utf-8")
