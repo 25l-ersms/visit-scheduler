@@ -1,11 +1,12 @@
+import json
+
 import confluent_kafka  # type: ignore[import-untyped]
 
+from visit_scheduler.es_utils.handler import add_rating, add_vendor
+from visit_scheduler.es_utils.models import RatingModel, VendorModel
 from visit_scheduler.kafka_utils.common import KafkaTokenProvider, KafkaTopics
 from visit_scheduler.package_utils.logger_conf import logger
 from visit_scheduler.package_utils.settings import KafkaSettings, kafka_authentication_scheme_t
-from visit_scheduler.es_utils.handler import add_vendor, add_rating
-from visit_scheduler.es_utils.models import VendorModel, RatingModel
-import json
 
 
 def _get_kafka_consumer_config(
@@ -36,13 +37,14 @@ def _get_kafka_consumer_config(
 def _handle_vendor_message(message: str) -> None:
     logger.info(f"Processing vendor message: {message}")
     data = json.loads(message)
-    
+
     # Transform incoming data to match our model
     vendor_data = VendorModel(
         name=data["vendor_name"],
         location=[data["address"]["latitude"], data["address"]["longitude"]],
         user_id=data["vendor_id"],
-        service_types=[service_type["name"] for service_type in data["service_types"]]
+        service_types=[service_type["name"] for service_type in data["service_types"]],
+        vendor_email=data["user"]["email"],
     )
     add_vendor(vendor_data)
 
@@ -65,7 +67,6 @@ def listen_to_kafka() -> None:
         KafkaTopics.USERS.topic_name: _handle_vendor_message,
         KafkaTopics.RATINGS.topic_name: _handle_rating_message,
     }
-
 
     consumer = confluent_kafka.Consumer(config)
     consumer.subscribe([x.topic_name for x in KafkaTopics])
