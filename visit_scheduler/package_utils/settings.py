@@ -27,3 +27,4 @@ class ElasticsearchSettings(BaseSettings):
     HOST: str
     LOGIN: str
     PASS: str
+    CACERT_PATH: str | None = None

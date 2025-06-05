@@ -23,4 +23,10 @@ def get_creds() -> tuple[str, str, str]:
 
 def get_es_client() -> Elasticsearch:
     host, es_pass, es_login = get_creds()
-    return Elasticsearch(host, basic_auth=(es_login, es_pass), verify_certs=False)
+    settings = ElasticsearchSettings()
+
+    if settings.CACERT_PATH:
+        client = Elasticsearch(host, ca_certs=settings.CACERT_PATH, basic_auth=(es_login, es_pass), verify_certs=True)
+    else:
+        client = Elasticsearch(host, basic_auth=(es_login, es_pass), verify_certs=False)
+    return client
