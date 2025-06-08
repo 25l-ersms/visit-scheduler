@@ -1,5 +1,7 @@
 import datetime
 
+from fastapi import HTTPException
+
 from visit_scheduler.app.models.models import SearchVendorModel
 from visit_scheduler.es_utils.client import get_es_client
 from visit_scheduler.es_utils.models import (
@@ -7,8 +9,10 @@ from visit_scheduler.es_utils.models import (
     ES_INDEX_VENDORS,
     TIME_SLOT_DURATION,
     RatingModel,
+    TimeSlotReturnModel,
     TimeSlotModel,
     VendorModel,
+    TimeSlotStatus,
 )
 from visit_scheduler.package_utils.logger_conf import logger
 
@@ -16,6 +20,7 @@ from visit_scheduler.package_utils.logger_conf import logger
 def add_vendor(data: VendorModel):
     es_client = get_es_client()
     es_client.index(index=ES_INDEX_VENDORS, body=data.model_dump())
+    logger.info(f"Added vendor: {data.vendor_email}")
 
 
 def add_time_slot(data: TimeSlotModel):
@@ -29,11 +34,13 @@ def add_time_slot(data: TimeSlotModel):
         _add_time_slot_chunk(
             TimeSlotModel(vendor_email=data.vendor_email, start_time=start_time, end_time=end_time, status=data.status)
         )
+    logger.info(f"Added time slots: {data}")
 
 
 def _add_time_slot_chunk(data: TimeSlotModel):
     es_client = get_es_client()
     es_client.index(index=ES_INDEX_TIME_SLOTS, body=data.model_dump())
+    logger.info(f"Added time slot: {data}")
 
 
 def add_rating(data: RatingModel):
@@ -69,10 +76,9 @@ def _get_time_slots(data: SearchVendorModel, vendor_data: list[tuple[str, float]
     }
 
     time_slots = es_client.search(index=ES_INDEX_TIME_SLOTS, body=query_time_slots)
-    print(f"Time slots: {time_slots}")
 
-    # Convert to TimeSlotModel objects
-    time_slot_objects = [TimeSlotModel(**hit["_source"]) for hit in time_slots["hits"]["hits"]]
+    # Convert to TimeSlotReturnModel objects
+    time_slot_objects = [TimeSlotReturnModel(**hit["_source"], id=hit["_id"]) for hit in time_slots["hits"]["hits"]]
 
     # Create vendor score mapping for sorting
     vendor_scores = {email: score for email, score in vendor_data}
@@ -124,13 +130,6 @@ def _get_vendor_emails(data: SearchVendorModel):
     }
     vendors = es_client.search(index=ES_INDEX_VENDORS, body=query_vendors)
 
-    # Debug: Log vendor scores TODO delete
-    logger.info("Vendor search results with scores:")
-    for hit in vendors["hits"]["hits"]:
-        logger.info(
-            f"Vendor: {hit['_source']['vendor_email']}, Score: {hit['_score']}, Location: {hit['_source'].get('location', 'N/A')}"
-        )
-
     # Return both vendor emails and their scores
     vendor_data = [(hit["_source"]["vendor_email"], hit["_score"]) for hit in vendors["hits"]["hits"]]
     return vendor_data
@@ -143,7 +142,6 @@ def search_vendors(data: SearchVendorModel):
 
     # 1. search for vendors in the area with the service type sort by rating and location
     vendor_data = _get_vendor_emails(data)
-    print(f"Vendor data: {vendor_data}")
 
     # 2. filter the vendors by the time slot and group by vendor_id
     return _get_time_slots(data, vendor_data)
@@ -152,6 +150,23 @@ def search_vendors(data: SearchVendorModel):
 def get_all_time_slots():
     es_client = get_es_client()
     return [
-        TimeSlotModel(**hit["_source"])
+        TimeSlotReturnModel(**hit["_source"], id=hit["_id"])
         for hit in es_client.search(index=ES_INDEX_TIME_SLOTS, body={"query": {"match_all": {}}})["hits"]["hits"]
     ]
+
+def change_es_time_slot_status(time_slot_ids: list[str], status: TimeSlotStatus):
+    es_client = get_es_client()
+    for time_slot_id in time_slot_ids:
+        es_client.update(index=ES_INDEX_TIME_SLOTS, id=time_slot_id, body={"status": status})
+
+
+def get_time_slot(time_slot_ids: list[str]):
+    es_client = get_es_client()
+    # join time slots into one time slot if they are consecutive
+    time_slots = es_client.search(index=ES_INDEX_TIME_SLOTS, body={"query": {"terms": {"id": time_slot_ids}}})
+    time_slots = [TimeSlotModel(**hit["_source"]) for hit in time_slots["hits"]["hits"]]
+    time_slots = sorted(time_slots, key=lambda x: x.start_time)
+    for i in range(len(time_slots) - 1):
+        if time_slots[i].end_time != time_slots[i + 1].start_time:
+            raise HTTPException(status_code=400, detail="Time slots are not consecutive") # nit: we probably dont want to raise http execepton in not fastapi part of the code
+    return TimeSlotModel(vendor_email=time_slots[0].vendor_email, start_time=time_slots[0].start_time, end_time=time_slots[-1].end_time)

@@ -30,6 +30,9 @@ class TimeSlotModel(pydantic.BaseModel):
     end_time: datetime.datetime
     status: TimeSlotStatus
 
+class TimeSlotReturnModel(TimeSlotModel):
+    id: str
+
 
 class RatingModel(pydantic.BaseModel):
     vendor_email: str

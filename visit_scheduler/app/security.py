@@ -46,7 +46,7 @@ def get_current_user(token: str = Cookie(None, alias="access_token")) -> UserSes
         if user_id is None or user_email is None:
             raise credentials_exception
 
-        return UserSessionData(user_id=user_id, user_email=user_email)
+        return UserSessionData(user_id=user_id, user_email=user_email, cookie_token=token)
 
     except ExpiredSignatureError:
         # Specifically handle expired tokens

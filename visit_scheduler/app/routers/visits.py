@@ -1,12 +1,14 @@
 from typing import Annotated
 
 from elastic_transport import ObjectApiResponse
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
-from visit_scheduler.app.models.models import AddTimeSlotModel, SearchVendorModel, UserSessionData
+from visit_scheduler.app.models.models import AddTimeSlotModel, BookTimeSlotModel, SearchVendorModel, UserSessionData, VisitAdressModel, VisitBookingModel
 from visit_scheduler.app.security import get_current_user
-from visit_scheduler.es_utils.handler import add_time_slot, get_all_time_slots, search_vendors
+from visit_scheduler.es_utils.handler import add_time_slot, change_es_time_slot_status, get_all_time_slots, get_time_slot, search_vendors
 from visit_scheduler.es_utils.models import TimeSlotModel, TimeSlotStatus
+import os
+import requests
 
 router = APIRouter(prefix="/visits", tags=["visits"], responses={404: {"description": "Not found"}})
 
@@ -37,3 +39,22 @@ async def end_add_time_slot(
             status=TimeSlotStatus.AVAILABLE,
         )
     )
+
+
+@router.post("/book_time_slot", response_model=None)
+async def end_book_time_slot(
+    data: BookTimeSlotModel, visit_adress: VisitAdressModel, user: UserSessionData = Depends(get_current_user)
+) -> None:
+    time_slot = get_time_slot(data.time_slot_ids)
+    reservation_result = requests.post(f"{os.getenv('VISIT_MANAGER_URL')}/user/book_time_slot", 
+                                       VisitBookingModel(
+                                           start_time=time_slot.start_time, 
+                                           end_time=time_slot.end_time, 
+                                           vendor_email=time_slot.vendor_email, 
+                                           visit_adress=visit_adress.model_dump()), 
+                                        cookies={"access_token": user.cookie_token})
+    if reservation_result.status_code != 200:
+        raise HTTPException(status_code=400, detail="Failed to book time slot")
+    change_es_time_slot_status(data.time_slot_ids, TimeSlotStatus.BOOKED)
+    return reservation_result.json()
+
