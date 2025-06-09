@@ -5,7 +5,7 @@ import pydantic
 
 ES_INDEX_VENDORS = "vendors"
 ES_INDEX_TIME_SLOTS = "time_slots"
-TIME_SLOT_DURATION = 15
+TIME_SLOT_DURATION = 60
 
 
 class VendorModel(pydantic.BaseModel):
@@ -23,14 +23,18 @@ class TimeSlotStatus(str, Enum):
     BOOKED = "booked"
     PENDING = "pending"
 
-
-class TimeSlotModel(pydantic.BaseModel):
+class BaseTimeSlotModel(pydantic.BaseModel):
     vendor_email: str
     start_time: datetime.datetime
     end_time: datetime.datetime
     status: TimeSlotStatus
+    vendor_name: str
 
-class TimeSlotReturnModel(TimeSlotModel):
+class TimeSlotModelRated(BaseTimeSlotModel):
+    vendor_rating: float
+    vendor_rating_amount: int
+
+class TimeSlotReturnModel(TimeSlotModelRated):
     id: str
 
 

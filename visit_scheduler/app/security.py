@@ -26,7 +26,8 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 
 def get_current_user(token: str = Cookie(None, alias="access_token")) -> UserSessionData:
-    # return UserSessionData(user_id="1", user_email="test@test.com") # TODO: remove
+    # print("cookie token", token)
+    # return UserSessionData(user_id="1", user_email="test@test.com", cookie_token="token") # TODO: remove
 
     if not token:
         logger.error("No access_token cookie found")

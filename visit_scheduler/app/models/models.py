@@ -14,6 +14,7 @@ class SearchVendorModel(BaseModel):
 class AddTimeSlotModel(BaseModel):
     start_time: datetime.datetime
     end_time: datetime.datetime
+    vendor_name: str
 
 
 class UserSessionData(BaseModel):
@@ -31,12 +32,7 @@ class TimeSlotModel(BaseModel):
 class BookTimeSlotModel(BaseModel):
     time_slot_ids: list[str]
 
-class VisitAdressModel(BaseModel):
-    location_lat: float
-    location_lon: float
-
 class VisitBookingModel(BaseModel):
     start_time: datetime.datetime
     end_time: datetime.datetime
     vendor_email: str
-    visit_adress: VisitAdressModel
