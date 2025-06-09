@@ -19,6 +19,7 @@ class KafkaSettings(BaseSettings):
     TOPIC: str
     BOOTSTRAP_URL: str
     AUTHENTICATION_SCHEME: kafka_authentication_scheme_t = "none"
+    GROUP_ID: str = "visit-scheduler"
 
 
 class ElasticsearchSettings(BaseSettings):

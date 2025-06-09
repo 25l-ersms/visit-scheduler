@@ -1,16 +1,38 @@
+import datetime
+
 from pydantic import BaseModel
 
 
-class InsertModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    name: str
-    age: int
+class SearchVendorModel(BaseModel):
+    location_lat: float
+    location_lon: float
+    service_type: str
+    start_time: datetime.datetime
+    end_time: datetime.datetime
 
 
-class SearchModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    query: str
-    page: int = 1
-    per_page: int = 10
+class AddTimeSlotModel(BaseModel):
+    start_time: datetime.datetime
+    end_time: datetime.datetime
+    vendor_name: str
 
 
-class SendModel(BaseModel):  # TODO change to real model, this is just a placeholder
-    msg: str
+class UserSessionData(BaseModel):
+    user_id: str
+    user_email: str
+    cookie_token: str
+
+class TimeSlotModel(BaseModel):
+    vendor_email: str
+    start_time: datetime.datetime
+    end_time: datetime.datetime
+    status: str
+
+
+class BookTimeSlotModel(BaseModel):
+    time_slot_ids: list[str]
+
+class VisitBookingModel(BaseModel):
+    start_time: datetime.datetime
+    end_time: datetime.datetime
+    vendor_email: str
