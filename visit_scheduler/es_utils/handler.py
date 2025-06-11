@@ -8,12 +8,11 @@ from visit_scheduler.es_utils.models import (
     ES_INDEX_TIME_SLOTS,
     ES_INDEX_VENDORS,
     TIME_SLOT_DURATION,
-    RatingModel,
-    TimeSlotModelRated,
-    TimeSlotReturnModel,
     BaseTimeSlotModel,
-    VendorModel,
+    RatingModel,
+    TimeSlotReturnModel,
     TimeSlotStatus,
+    VendorModel,
 )
 from visit_scheduler.package_utils.logger_conf import logger
 
@@ -33,8 +32,13 @@ def add_time_slot(data: BaseTimeSlotModel):
         start_time = data.start_time + i * slot_duration
         end_time = start_time + slot_duration
         _add_time_slot_chunk(
-            BaseTimeSlotModel(vendor_email=data.vendor_email, start_time=start_time, end_time=end_time, 
-                              status=data.status, vendor_name=data.vendor_name)
+            BaseTimeSlotModel(
+                vendor_email=data.vendor_email,
+                start_time=start_time,
+                end_time=end_time,
+                status=data.status,
+                vendor_name=data.vendor_name,
+            )
         )
 
 
@@ -51,13 +55,13 @@ def add_rating(data: RatingModel):
     )
 
 
-def _get_time_slots(data: SearchVendorModel, vendor_data: list[tuple[str, float, str, float, int]]):
+def _get_time_slots(data: SearchVendorModel, vendor_data: list[tuple[str, float, str, float, int, str]]):
     # If no vendors found, return empty list
     if not vendor_data:
         return []
 
     # Extract just the emails for the Elasticsearch query
-    vendor_emails = [email for email, _, _, _, _ in vendor_data]
+    vendor_emails = [email for email, _, _, _, _, _ in vendor_data]
 
     es_client = get_es_client()
     query_time_slots = {
@@ -78,21 +82,32 @@ def _get_time_slots(data: SearchVendorModel, vendor_data: list[tuple[str, float,
     time_slots = es_client.search(index=ES_INDEX_TIME_SLOTS, body=query_time_slots)
 
     # Create vendor score mapping for sorting
-    vendor_scores = {email: {"score": score, "vendor_name": vendor_name, "vendor_rating": vendor_rating, "vendor_rating_amount": vendor_rating_amount} 
-                     for email, score, vendor_name, vendor_rating, vendor_rating_amount in vendor_data}
+    vendor_scores = {
+        email: {
+            "score": score,
+            "vendor_name": vendor_name,
+            "vendor_rating": vendor_rating,
+            "vendor_rating_amount": vendor_rating_amount,
+            "service_types": service_types,
+        }
+        for email, score, vendor_name, vendor_rating, vendor_rating_amount, service_types in vendor_data
+    }
 
     # Convert to TimeSlotReturnModel objects with vendor data
     time_slot_objects = []
     for hit in time_slots["hits"]["hits"]:
         source = hit["_source"]
         vendor_email = source["vendor_email"]
-        vendor_info = vendor_scores.get(vendor_email, {"vendor_name": "", "vendor_rating": 0.0, "vendor_rating_amount": 0})
-        
+        vendor_info = vendor_scores.get(
+            vendor_email, {"vendor_name": "", "vendor_rating": 0.0, "vendor_rating_amount": 0, "service_types": ""}
+        )
+
         time_slot = TimeSlotReturnModel(
             **source,
             vendor_rating=vendor_info["vendor_rating"],
             vendor_rating_amount=vendor_info["vendor_rating_amount"],
-            id=hit["_id"]
+            service_types=vendor_info["service_types"],
+            id=hit["_id"],
         )
         time_slot_objects.append(time_slot)
 
@@ -100,7 +115,9 @@ def _get_time_slots(data: SearchVendorModel, vendor_data: list[tuple[str, float,
     sorted_time_slots = sorted(
         time_slot_objects,
         key=lambda slot: (
-            -vendor_scores.get(slot.vendor_email, {"score": 0})["score"],  # Negative for descending order (higher scores first)
+            -vendor_scores.get(slot.vendor_email, {"score": 0})[
+                "score"
+            ],  # Negative for descending order (higher scores first)
             slot.start_time,  # Secondary sort by start time
         ),
     )
@@ -144,8 +161,17 @@ def _get_vendor_emails(data: SearchVendorModel):
     vendors = es_client.search(index=ES_INDEX_VENDORS, body=query_vendors)
 
     # Return both vendor emails and their scores
-    vendor_data = [(hit["_source"]["vendor_email"], hit["_score"], hit["_source"]["name"], hit["_source"]["rating"], hit["_source"]["rating_amount"]) 
-                   for hit in vendors["hits"]["hits"]]
+    vendor_data = [
+        (
+            hit["_source"]["vendor_email"],
+            hit["_score"],
+            hit["_source"]["name"],
+            hit["_source"]["rating"],
+            hit["_source"]["rating_amount"],
+            hit["_source"]["service_types"],
+        )
+        for hit in vendors["hits"]["hits"]
+    ]
     return vendor_data
 
 
@@ -165,14 +191,20 @@ def get_all_time_slots():
     # shit doesnt work. but doesnt matter
     es_client = get_es_client()
     return [
-        TimeSlotReturnModel(**hit["_source"], id=hit["_id"], vendor_rating=get_vendor_rating(hit["_source"]["vendor_email"]), vendor_rating_amount=get_vendor_rating_amount(hit["_source"]["vendor_email"]))
+        TimeSlotReturnModel(
+            **hit["_source"],
+            id=hit["_id"],
+            vendor_rating=get_vendor_rating(hit["_source"]["vendor_email"]),
+            vendor_rating_amount=get_vendor_rating_amount(hit["_source"]["vendor_email"]),
+        )
         for hit in es_client.search(index=ES_INDEX_TIME_SLOTS, body={"query": {"match_all": {}}})["hits"]["hits"]
     ]
+
 
 def change_es_time_slot_status(time_slot_ids: list[str], status: TimeSlotStatus):
     es_client = get_es_client()
     for time_slot_id in time_slot_ids:
-        es_client.update(index=ES_INDEX_TIME_SLOTS, id=time_slot_id, body={"status": status})
+        es_client.update(index=ES_INDEX_TIME_SLOTS, id=time_slot_id, body={"doc": {"status": status}})
 
 
 def get_time_slot(time_slot_ids: list[str]):
@@ -184,8 +216,16 @@ def get_time_slot(time_slot_ids: list[str]):
     time_slots = sorted(time_slots, key=lambda x: x.start_time)
     for i in range(len(time_slots) - 1):
         if time_slots[i].end_time != time_slots[i + 1].start_time:
-            raise HTTPException(status_code=400, detail="Time slots are not consecutive") # nit: we probably dont want to raise http execepton in not fastapi part of the code
-    return BaseTimeSlotModel(vendor_email=time_slots[0].vendor_email, start_time=time_slots[0].start_time, end_time=time_slots[-1].end_time, status=TimeSlotStatus.BOOKED, vendor_name=time_slots[0].vendor_name)
+            raise HTTPException(
+                status_code=400, detail="Time slots are not consecutive"
+            )  # nit: we probably dont want to raise http execepton in not fastapi part of the code
+    return BaseTimeSlotModel(
+        vendor_email=time_slots[0].vendor_email,
+        start_time=time_slots[0].start_time,
+        end_time=time_slots[-1].end_time,
+        status=TimeSlotStatus.BOOKED,
+        vendor_name=time_slots[0].vendor_name,
+    )
 
 
 def get_vendor_rating(vendor_email: str) -> tuple[float, int]:
@@ -193,10 +233,12 @@ def get_vendor_rating(vendor_email: str) -> tuple[float, int]:
     vendor = es_client.search(index=ES_INDEX_VENDORS, body={"query": {"match": {"vendor_email": vendor_email}}})
     return vendor["hits"]["hits"][0]["_source"]["rating"]
 
+
 def get_vendor_rating_and_amount(vendor_email: str) -> tuple[float, int]:
     es_client = get_es_client()
     vendor = es_client.search(index=ES_INDEX_VENDORS, body={"query": {"match": {"vendor_email": vendor_email}}})
     return vendor["hits"]["hits"][0]["_source"]["rating"], vendor["hits"]["hits"][0]["_source"]["rating_amount"]
+
 
 def get_vendor_rating_amount(vendor_email: str) -> int:
     es_client = get_es_client()

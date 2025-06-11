@@ -23,6 +23,7 @@ class TimeSlotStatus(str, Enum):
     BOOKED = "booked"
     PENDING = "pending"
 
+
 class BaseTimeSlotModel(pydantic.BaseModel):
     vendor_email: str
     start_time: datetime.datetime
@@ -30,12 +31,15 @@ class BaseTimeSlotModel(pydantic.BaseModel):
     status: TimeSlotStatus
     vendor_name: str
 
+
 class TimeSlotModelRated(BaseTimeSlotModel):
     vendor_rating: float
     vendor_rating_amount: int
 
+
 class TimeSlotReturnModel(TimeSlotModelRated):
     id: str
+    service_types: list[str]
 
 
 class RatingModel(pydantic.BaseModel):
